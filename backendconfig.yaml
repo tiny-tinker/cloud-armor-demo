@@ -3,5 +3,17 @@ kind: BackendConfig
 metadata:
   name: my-backendconfig
 spec:
+  healthCheck:
+    requestPath: /healthz/ready
+    port: 15021
+    type: HTTP
   securityPolicy:
     name: %%SEC_POLICY%%
+  # healthCheck:
+  #   # checkIntervalSec: interval
+  #   # timeoutSec: timeout
+  #   # healthyThreshold: health-threshold
+  #   # unhealthyThreshold: unhealthy-threshold
+  #   type: HTTP
+  #   requestPath: /
+  #   port: 80

@@ -1,15 +1,15 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: my-ingress-istio
+  name: my-ingress
 spec:
   rules:
     - http:
         paths:
-          - path: /
-            pathType: Exact
+          - path: /*
+            pathType: ImplementationSpecific
             backend:
               service:
-                name: istio-ingressgateway
+                name: istio-ingress
                 port: 
                   number: 80

@@ -3,6 +3,13 @@
 For Cloud Armor and stuff. Derived from [here](https://alwaysupalwayson.com/posts/2021/04/cloud-armor/) and some from [here](https://medium.com/contino-engineering/configuring-ddos-protection-with-google-cloud-armor-for-your-gke-provisioned-istio-ingressgateway-a9e862dc1683)
 
 
+Really helpful doc also:
+https://www.padok.fr/en/blog/https-istio-kubernetes
+
+Good reading on LoadBalancer vs Ingress vs NodePort [here](https://medium.com/google-cloud/kubernetes-nodeport-vs-loadbalancer-vs-ingress-when-should-i-use-what-922f010849e0)
+
+
+
 # Set up
 
 Update these valuese as needed
@@ -11,7 +18,6 @@ Update these valuese as needed
 gcloud config set project MYPROJECTHERE
 gcloud config set compute/region us-central1
 gcloud config set compute/zone us-central1-b
-export $MY_NS=hello
 
 ```
 
@@ -51,9 +57,34 @@ kubectl apply -n hello -f -
 
 Then, deploy the bookinfo app to our cluster: (Details from [here](https://istio.io/latest/docs/examples/bookinfo/))
 
+https://istio.io/latest/docs/examples/microservices-istio/istio-ingress-gateway/
+
 
 ```bash
 gcloud container clusters get-credentials $CLUSTER_NAME --region $REGION
+
+
+kubectl apply -n istio-system -f health-vsvc.yaml
+
+
+sed "s/%%SEC_POLICY%%/$SEC_POLICY/g" backendconfig.yaml | \
+kubectl apply -n istio-system -f -
+
+kubectl patch svc istio-ingressgateway -n istio-system --patch-file patch-ingressgateway.yaml
+
+kubectl get events --watch -n istio-system
+
+kubectl apply -n istio-system -f istio-ingress.yaml
+
+
+
+
+
+
+kubectl apply -n gke-system -f istio-ingress.yaml
+
+kubectl get ingress my-ingress -n gke-system --watch
+
 
 
 kubectl create namespace bookinfo
@@ -62,26 +93,27 @@ kubectl apply -n bookinfo -f bookinfo-manifest.yaml
 kubectl apply -n bookinfo -f bookinfo-gateway.yaml
 
 
-
-kubectl apply -n istio-system -f health-gateway.yaml
-
-sed "s/%%SEC_POLICY%%/$SEC_POLICY/g" backendconfig.yaml | \
-kubectl apply -n istio-system -f -
-
-kubectl patch svc istio-ingressgateway -n istio-system --patch-file patch-ingressgateway.yaml
-
-kubectl apply -n istio-system -f istio-ingress.yaml
-
 ```
 
 
+kubectl label namespace default istio-injection=enabled
+
+kubectl apply -f kiali.yaml
+kubectl rollout status deployment/kiali -n istio-system
+istioctl dashboard kiali
 
 
+
+kubectl rollout restart deploy -n bookinfo
+kubectl rollout restart deploy -n istio-system
 
 ```bash
 export INGRESS_HOST=$(kubectl -n istio-system get service istio-ingressgateway -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
 export INGRESS_PORT=$(kubectl -n istio-system get service istio-ingressgateway -o jsonpath='{.spec.ports[?(@.name=="http2")].port}')
 export GATEWAY_URL=$INGRESS_HOST:$INGRESS_PORT
+
+echo $INGRESS_HOST
+echo $GATEWAY_URL
 
 ```
 

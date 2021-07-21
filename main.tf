@@ -67,6 +67,7 @@ resource "google_container_cluster" "primary" {
     cluster_ipv4_cidr_block = ""
   }
 
+
   addons_config {
     istio_config {
       disabled = false
