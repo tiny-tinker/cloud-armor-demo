@@ -7,9 +7,9 @@ spec:
     - http:
         paths:
           - path: /*
-            pathType: ImplementationSpecific
+            pathType: Prefix
             backend:
               service:
-                name: istio-ingress
+                name: istio-ingressgateway
                 port: 
                   number: 80

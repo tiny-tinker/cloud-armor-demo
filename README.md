@@ -60,20 +60,26 @@ Then, deploy the bookinfo app to our cluster: (Details from [here](https://istio
 https://istio.io/latest/docs/examples/microservices-istio/istio-ingress-gateway/
 
 
+Bookinfo uses a VirtualService and a Gateway behind the Istio IngressGateway, so we have to do a few things to prep the environment. 
 ```bash
 gcloud container clusters get-credentials $CLUSTER_NAME --region $REGION
 
-
+# Deploy a service to acknowledge the health check request from Google
 kubectl apply -n istio-system -f health-vsvc.yaml
 
-
+# Associate the security policy deployed from TF with the BackendConfig
 sed "s/%%SEC_POLICY%%/$SEC_POLICY/g" backendconfig.yaml | \
 kubectl apply -n istio-system -f -
 
+# The istio ingressgateway is a `LoadBalancer`, but we need it to be a `NodePort`, and we need to associate it to the BackendConfig above so that Cloud Armor gets roped into the picture.
+# Don't be alarmed, this will remove the current Load Balancer (Frontend) in the GCP Console.
 kubectl patch svc istio-ingressgateway -n istio-system --patch-file patch-ingressgateway.yaml
 
+# The patch will take a moment, so watch here for a bit.
 kubectl get events --watch -n istio-system
 
+
+# Now deploy an Ingress operator to build the Frontend and pass requests to the ingressgateway service. This will take some time too.
 kubectl apply -n istio-system -f istio-ingress.yaml
 
 
@@ -81,9 +87,9 @@ kubectl apply -n istio-system -f istio-ingress.yaml
 
 
 
-kubectl apply -n gke-system -f istio-ingress.yaml
+# kubectl apply -n gke-system -f istio-ingress.yaml
 
-kubectl get ingress my-ingress -n gke-system --watch
+# kubectl get ingress my-ingress -n gke-system --watch
 
 
 

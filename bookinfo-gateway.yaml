@@ -21,7 +21,7 @@ spec:
   hosts:
   - "*"
   gateways:
-  - bookinfo-gateway.bookinfo.svc.cluster.local
+  - bookinfo-gateway
   http:
   - match:
     - uri:

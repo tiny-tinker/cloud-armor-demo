@@ -1,4 +1,6 @@
 .DS_Store
+kiali.yaml
+mohsin-cloudrun.sh
 
 # Local .terraform directories
 **/.terraform/*
