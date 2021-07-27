@@ -72,7 +72,7 @@ sed "s/%%SEC_POLICY%%/$SEC_POLICY/g" backendconfig.yaml | \
 kubectl apply -n istio-system -f -
 
 # The istio ingressgateway is a `LoadBalancer`, but we need it to be a `NodePort`, and we need to associate it to the BackendConfig above so that Cloud Armor gets roped into the picture.
-# Don't be alarmed, this will remove the current Load Balancer (Frontend) in the GCP Console.
+# Don't be alarmed, this will remove the current Load Balancer (Frontend) in the GCP Console and we'll then deploy an Ingress later
 kubectl patch svc istio-ingressgateway -n istio-system --patch-file patch-ingressgateway.yaml
 
 # The patch will take a moment, so watch here for a bit.
@@ -82,86 +82,17 @@ kubectl get events --watch -n istio-system
 # Now deploy an Ingress operator to build the Frontend and pass requests to the ingressgateway service. This will take some time too.
 kubectl apply -n istio-system -f istio-ingress.yaml
 
-
-
-
-
-
-# kubectl apply -n gke-system -f istio-ingress.yaml
-
-# kubectl get ingress my-ingress -n gke-system --watch
-
-
-
+# Deploy bookinfo into a new namespace
 kubectl create namespace bookinfo
 kubectl label namespace bookinfo istio-injection=enabled
 kubectl apply -n bookinfo -f bookinfo-manifest.yaml
 kubectl apply -n bookinfo -f bookinfo-gateway.yaml
 
+# Get the external IP:
+ kubectl get ingress -n istio-system
+
 
 ```
 
-
-kubectl label namespace default istio-injection=enabled
-
-kubectl apply -f kiali.yaml
-kubectl rollout status deployment/kiali -n istio-system
-istioctl dashboard kiali
-
-
-
-kubectl rollout restart deploy -n bookinfo
-kubectl rollout restart deploy -n istio-system
-
-```bash
-export INGRESS_HOST=$(kubectl -n istio-system get service istio-ingressgateway -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
-export INGRESS_PORT=$(kubectl -n istio-system get service istio-ingressgateway -o jsonpath='{.spec.ports[?(@.name=="http2")].port}')
-export GATEWAY_URL=$INGRESS_HOST:$INGRESS_PORT
-
-echo $INGRESS_HOST
-echo $GATEWAY_URL
-
-```
-
-
-
-
-
-
-# Junk
-
-
-
-
-
-If you don't have `istioctl` installed, see [here](https://istio.io/latest/docs/setup/install/istioctl/) for details. For mac `brew install istioctl` works great.)
-
-Install istio to the cluster with the `demo` [profile](https://istio.io/latest/docs/setup/additional-setup/config-profiles/).
-```bash
-istioctl install --set profile=demo -y -n bookinfo
-```
-
-
-...
-
-
-```bash
-
-cat <<EOF > /tmp/backend-config.yaml
-apiVersion: cloud.google.com/v1
-kind: BackendConfig
-metadata:
-  name: ingress-backendconfig
-spec:
-  healthCheck:
-    requestPath: /healthz/ready
-    port: 15021
-    type: HTTP
-  securityPolicy:
-    name: $SEC_POLICY
-EOF
-kubectl apply -f /tmp/backend-config.yaml
-
-```
 
 
