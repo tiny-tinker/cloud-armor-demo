@@ -1,13 +1,13 @@
-# GLB Demo
+# GLB Demo - Cloud Armor, GKE and Istio for Bookinfo
 
-For Cloud Armor and stuff. Derived from [here](https://alwaysupalwayson.com/posts/2021/04/cloud-armor/) and some from [here](https://medium.com/contino-engineering/configuring-ddos-protection-with-google-cloud-armor-for-your-gke-provisioned-istio-ingressgateway-a9e862dc1683)
+This repo builds out an environment to demo Cloud Armor in front of GKE with managed Istio and deploys the Bookinfo sample app. Useful for demos and as a base to play with a k8s environment with Istio.
 
+Most of this Derived from [here](https://alwaysupalwayson.com/posts/2021/04/cloud-armor/) and some from [here](https://medium.com/contino-engineering/configuring-ddos-protection-with-google-cloud-armor-for-your-gke-provisioned-istio-ingressgateway-a9e862dc1683)
 
 Really helpful doc also:
 https://www.padok.fr/en/blog/https-istio-kubernetes
 
 Good reading on LoadBalancer vs Ingress vs NodePort [here](https://medium.com/google-cloud/kubernetes-nodeport-vs-loadbalancer-vs-ingress-when-should-i-use-what-922f010849e0)
-
 
 
 # Set up
@@ -21,6 +21,7 @@ gcloud config set compute/zone us-central1-b
 
 ```
 
+Set some vars and apply the TF, then grab a couple output variables.
 
 ```bash
 export TF_VAR_project=`gcloud config get-value project`
@@ -57,7 +58,7 @@ kubectl apply -n hello -f -
 
 Then, deploy the bookinfo app to our cluster: (Details from [here](https://istio.io/latest/docs/examples/bookinfo/))
 
-https://istio.io/latest/docs/examples/microservices-istio/istio-ingress-gateway/
+Read up on IngressGateway [here](https://istio.io/latest/docs/examples/microservices-istio/istio-ingress-gateway/).
 
 
 Bookinfo uses a VirtualService and a Gateway behind the Istio IngressGateway, so we have to do a few things to prep the environment. 
@@ -94,5 +95,15 @@ kubectl apply -n bookinfo -f bookinfo-gateway.yaml
 
 ```
 
+# DDoS Yourself
 
+Use the [global-loadgen](https://github.com/sadasystems/global-loadgen) repo to deploy CloudRun environments. 
 
+# Clean Up
+
+```bash
+terraform destroy
+
+```
+
+There is also a network endpoing group leakage. TODO: Add removal statement here. 
