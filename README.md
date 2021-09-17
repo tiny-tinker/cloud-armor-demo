@@ -52,6 +52,10 @@ kubectl create namespace hello
 
 sed "s/%%SEC_POLICY%%/$SEC_POLICY/g" hello-world-deployment.yaml | \
 kubectl apply -n hello -f -
+
+# Wait a bit, then get the address
+kubectl get ingress -n hello
+
 ```
 
 ## Bookinfo
