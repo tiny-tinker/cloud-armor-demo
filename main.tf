@@ -11,40 +11,27 @@ provider "google-beta" {
 }
 
 
-resource "google_compute_security_policy" "sec-policy" {
-  provider = google-beta
 
-  name = var.sec-policy-name
 
-  rule {
-    action   = "deny(403)"
-    priority = "1000"
-    match {
-      versioned_expr = "SRC_IPS_V1"
-      config {
-        src_ip_ranges = ["9.9.9.0/24"]
-      }
-    }
-    description = "Deny access to IPs in 9.9.9.0/24"
-  }
+resource "google_compute_instance" "bad-actor" {
+  name         = "bad-actor"
+  machine_type = "e2-medium"
+  zone         = var.bad_zone
 
-  rule {
-    action   = "allow"
-    priority = "2147483647"
-    match {
-      versioned_expr = "SRC_IPS_V1"
-      config {
-        src_ip_ranges = ["*"]
-      }
-    }
-    description = "default rule"
-  }
-
-  adaptive_protection_config {
-    layer_7_ddos_defense_config {
-        enable = true 
+  boot_disk {
+    initialize_params {
+      image = "debian-cloud/debian-9"
     }
   }
+
+  network_interface {
+    network = "default"
+    access_config {
+      // Ephemeral public IP
+    }
+  }
+
+
 }
 
 
@@ -93,5 +80,49 @@ resource "google_container_node_pool" "primary_preemptible_nodes" {
     ]
   }
 }
+
+
+
+
+
+resource "google_compute_security_policy" "sec-policy" {
+  provider = google-beta
+  depends_on = [
+    google_compute_instance.bad-actor,
+  ]
+
+  name = var.sec-policy-name
+
+  rule {
+    action   = "deny(403)"
+    priority = "1000"
+    match {
+      versioned_expr = "SRC_IPS_V1"
+      config {
+        src_ip_ranges = [ "${google_compute_instance.bad-actor.network_interface.0.access_config.0.nat_ip}/32"  ]
+      }
+    }
+    description = "Deny access to IPs in ${google_compute_instance.bad-actor.network_interface.0.access_config.0.nat_ip}/32"
+  }
+
+  rule {
+    action   = "allow"
+    priority = "2147483647"
+    match {
+      versioned_expr = "SRC_IPS_V1"
+      config {
+        src_ip_ranges = ["*"]
+      }
+    }
+    description = "default rule"
+  }
+
+  adaptive_protection_config {
+    layer_7_ddos_defense_config {
+        enable = true 
+    }
+  }
+}
+
 
 

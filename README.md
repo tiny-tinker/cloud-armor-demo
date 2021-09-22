@@ -37,6 +37,8 @@ terraform apply tf.plan
 
 export CLUSTER_NAME=`terraform output -raw cluster_name`
 export SEC_POLICY=`terraform output -raw sec_policy`
+export BAD_VM=`terraform output -raw bad_actor_vm`
+export BAD_ZONE=`terraform output -raw bad_zone`
 ```
 
 From here, choose your own adventure. Super small, "Hello, World" or full blown Bookinfo. 
@@ -99,9 +101,54 @@ kubectl apply -n bookinfo -f bookinfo-gateway.yaml
 
 ```
 
-# DDoS Yourself
+# Generate Normal Traffic
 
 Use the [global-loadgen](https://github.com/sadasystems/global-loadgen) repo to deploy CloudRun environments. 
+
+
+# DDoS Yourself
+These commands will ssh into the bad-actor vm and fire off a handful of requests. Since the external IP of this VM is in the Cloud Armor block list, these will result in `403`s returned.
+
+```bash
+
+export BAD_VM=`terraform output -raw bad_actor_vm`
+export BAD_ZONE=`terraform output -raw bad_zone`
+export URL=INSERT_MY_URL_HERE
+export NUM_REQUESTS=1000
+
+gcloud compute ssh $BAD_VM --zone $BAD_ZONE << EOF
+for i in {1..$NUM_REQUESTS}
+do 
+    curl -s -o /dev/null -w "%{http_code}" $URL
+    sleep 1 
+done
+EOF
+
+```
+
+
+
+# Apply a Preconfigured Rule
+
+```bash
+# https://cloud.google.com/armor/docs/rules-language-reference
+
+
+# Retrieve the pre-configured rules
+# Some details: 
+# https://cloud.google.com/armor/docs/rule-tuning
+
+gcloud compute security-policies list-preconfigured-expression-sets
+
+
+gcloud compute security-policies rules create 9003 \
+    --security-policy my-security-policy  \
+    --description "block protocol attacks" \
+     --expression "evaluatePreconfiguredExpr('protocolattack-stable')" \
+    --action deny-403
+
+```
+
 
 # Clean Up
 
@@ -110,4 +157,4 @@ terraform destroy
 
 ```
 
-There is also a network endpoing group leakage. TODO: Add removal statement here. 
+There is also a network endpoint group leakage. TODO: Add removal statement here. 

@@ -26,3 +26,14 @@ variable "sec-policy-name" {
 }
 
 
+variable "bad_zone" {
+  type = string
+  default = "europe-central2-a"
+  description = "The region to put the bad-actor VM. the var.bad_net_cidr should be the cidr for the subnet in this zone"
+}
+
+variable "bad_net_cidr" {
+  type = string
+  default     = "10.186.0.0/20"
+  description = "cidr for the bad network in the var.bad_zone"
+}
