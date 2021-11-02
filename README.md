@@ -111,9 +111,10 @@ These commands will ssh into the bad-actor vm and fire off a handful of requests
 
 ```bash
 
+export URL=INSERT_MY_URL_HERE
+
 export BAD_VM=`terraform output -raw bad_actor_vm`
 export BAD_ZONE=`terraform output -raw bad_zone`
-export URL=INSERT_MY_URL_HERE
 export NUM_REQUESTS=1000
 
 gcloud compute ssh $BAD_VM --zone $BAD_ZONE << EOF
