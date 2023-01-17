@@ -1,13 +1,6 @@
 # GLB Demo - Cloud Armor, GKE and Istio for Bookinfo
 
-This repo builds out an environment to demo Cloud Armor in front of GKE with managed Istio and deploys the Bookinfo sample app. Useful for demos and as a base to play with a k8s environment with Istio.
-
-Most of this Derived from [here](https://alwaysupalwayson.com/posts/2021/04/cloud-armor/) and some from [here](https://medium.com/contino-engineering/configuring-ddos-protection-with-google-cloud-armor-for-your-gke-provisioned-istio-ingressgateway-a9e862dc1683)
-
-Really helpful doc also:
-https://www.padok.fr/en/blog/https-istio-kubernetes
-
-Good reading on LoadBalancer vs Ingress vs NodePort [here](https://medium.com/google-cloud/kubernetes-nodeport-vs-loadbalancer-vs-ingress-when-should-i-use-what-922f010849e0)
+This repo builds out an environment to demo Cloud Armor by deploying a GLB in front of a simple AppEngine service. 
 
 
 # Set up
@@ -31,11 +24,20 @@ export REGION=`gcloud config get-value compute/region`
 export ZONE=`gcloud config get-value compute/zone`
 # export PROJECT_ID=`gcloud config get-value project`
 
+
+# First, deploy the appengine service to make sure there is a service. 
+# Could probably do in TF, but headaches. 
+
+cd ./app/hello_world
+gcloud app deploy
+# Hit yes when it's done thinking
+
+
 terraform init
 terraform plan -out tf.plan 
 terraform apply tf.plan
 
-export CLUSTER_NAME=`terraform output -raw cluster_name`
+
 export SEC_POLICY=`terraform output -raw sec_policy`
 export BAD_VM=`terraform output -raw bad_actor_vm`
 export BAD_ZONE=`terraform output -raw bad_zone`
@@ -43,63 +45,9 @@ export BAD_ZONE=`terraform output -raw bad_zone`
 
 From here, choose your own adventure. Super small, "Hello, World" or full blown Bookinfo. 
 
-## Hello, World
-Super small deployment of hello world based on [this](https://cloud.google.com/kubernetes-engine/docs/how-to/load-balance-ingress#using-gcloud-config) doc page.
 
-```bash
-# Just in case the credentials haven't been set
-gcloud container clusters get-credentials $CLUSTER_NAME --region $REGION
+#TODO
 
-kubectl create namespace hello
-
-sed "s/%%SEC_POLICY%%/$SEC_POLICY/g" hello-world-deployment.yaml | \
-kubectl apply -n hello -f -
-
-# Wait a bit, then get the address
-kubectl get ingress -n hello
-
-```
-
-## Bookinfo
-
-Then, deploy the bookinfo app to our cluster: (Details from [here](https://istio.io/latest/docs/examples/bookinfo/))
-
-Read up on IngressGateway [here](https://istio.io/latest/docs/examples/microservices-istio/istio-ingress-gateway/).
-
-
-Bookinfo uses a VirtualService and a Gateway behind the Istio IngressGateway, so we have to do a few things to prep the environment. 
-```bash
-gcloud container clusters get-credentials $CLUSTER_NAME --region $REGION
-
-# Deploy a service to acknowledge the health check request from Google
-kubectl apply -n istio-system -f health-vsvc.yaml
-
-# Associate the security policy deployed from TF with the BackendConfig
-sed "s/%%SEC_POLICY%%/$SEC_POLICY/g" backendconfig.yaml | \
-kubectl apply -n istio-system -f -
-
-# The istio ingressgateway is a `LoadBalancer`, but we need it to be a `NodePort`, and we need to associate it to the BackendConfig above so that Cloud Armor gets roped into the picture.
-# Don't be alarmed, this will remove the current Load Balancer (Frontend) in the GCP Console and we'll then deploy an Ingress later
-kubectl patch svc istio-ingressgateway -n istio-system --patch-file patch-ingressgateway.yaml
-
-# The patch will take a moment, so watch here for a bit.
-kubectl get events --watch -n istio-system
-
-
-# Now deploy an Ingress operator to build the Frontend and pass requests to the ingressgateway service. This will take some time too.
-kubectl apply -n istio-system -f istio-ingress.yaml
-
-# Deploy bookinfo into a new namespace
-kubectl create namespace bookinfo
-kubectl label namespace bookinfo istio-injection=enabled
-kubectl apply -n bookinfo -f bookinfo-manifest.yaml
-kubectl apply -n bookinfo -f bookinfo-gateway.yaml
-
-# Get the external IP:
- kubectl get ingress -n istio-system
-
-
-```
 
 # Generate Normal Traffic
 
@@ -150,6 +98,17 @@ gcloud compute security-policies rules create 9003 \
 
 ```
 
+
+
+# Update the App Code
+
+After making updates, zip the `hello_world` directory. 
+(untested)
+```bash
+cd app
+zip -r hello_world.zip ./hello_world
+
+```
 
 # Clean Up
 

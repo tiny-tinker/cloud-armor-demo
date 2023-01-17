@@ -1,8 +1,8 @@
 # Not sure if this is needed
 module "project-services" {
-  source  = "terraform-google-modules/project-factory/google//modules/project_services"
+  source = "terraform-google-modules/project-factory/google//modules/project_services"
 
-  project_id  = var.project
+  project_id                  = var.project
   disable_services_on_destroy = false
   activate_apis = [
     "compute.googleapis.com",
