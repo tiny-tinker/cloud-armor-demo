@@ -5,6 +5,12 @@ variable "project" {
 }
 
 
+variable "the_network" {
+  type        = string
+  default     = "default"
+  description = "The network to use. Should already be deployed."
+}
+
 variable "region" {
   type        = string
   default     = "us-central1"

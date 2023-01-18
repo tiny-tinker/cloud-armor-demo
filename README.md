@@ -1,4 +1,4 @@
-# GLB Demo - Cloud Armor, GKE and Istio for Bookinfo
+# Cloud Armor Demo
 
 This repo builds out an environment to demo Cloud Armor by deploying a GLB in front of a simple AppEngine service. 
 
@@ -41,9 +41,9 @@ terraform apply tf.plan
 export SEC_POLICY=`terraform output -raw sec_policy`
 export BAD_VM=`terraform output -raw bad_actor_vm`
 export BAD_ZONE=`terraform output -raw bad_zone`
+export APP_URL=`terraform output -raw app_url`
 ```
 
-From here, choose your own adventure. Super small, "Hello, World" or full blown Bookinfo. 
 
 
 #TODO
@@ -59,7 +59,7 @@ These commands will ssh into the bad-actor vm and fire off a handful of requests
 
 ```bash
 
-export URL=INSERT_MY_URL_HERE
+#export APP_URL=INSERT_MY_URL_HERE
 
 export BAD_VM=`terraform output -raw bad_actor_vm`
 export BAD_ZONE=`terraform output -raw bad_zone`
@@ -68,7 +68,8 @@ export NUM_REQUESTS=1000
 gcloud compute ssh $BAD_VM --zone $BAD_ZONE << EOF
 for i in {1..$NUM_REQUESTS}
 do 
-    curl -s -o /dev/null -w "%{http_code}" $URL
+    curl -o /dev/null -w "%{http_code}" $APP_URL
+    echo
     sleep 1 
 done
 EOF
@@ -105,8 +106,10 @@ gcloud compute security-policies rules create 9003 \
 After making updates, zip the `hello_world` directory. 
 (untested)
 ```bash
-cd app
-zip -r hello_world.zip ./hello_world
+
+cd app/hello_world
+rm hello_world.zip
+zip -r hello_world.zip ./*
 
 ```
 
